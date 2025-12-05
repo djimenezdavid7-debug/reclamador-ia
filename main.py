@@ -4,7 +4,7 @@ import base64
 from openai import OpenAI
 import os
 import shutil
-
+# Actualización final corrección blur
 # --- CONFIGURACIÓN ---
 API_KEY = os.getenv("OPENAI_API_KEY")
 
