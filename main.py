@@ -167,3 +167,5 @@ def main(page: ft.Page):
 
 # IMPORTANTE: upload_dir="uploads" permite que funcione en la web
 ft.app(target=main, view=ft.AppView.WEB_BROWSER, upload_dir="uploads", port=int(os.getenv("PORT", 8080)), host="0.0.0.0")
+# IMPORTANTE: upload_dir="uploads" permite que funcione en la web
+# IMPORTANTE: upload_dir="uploads" permite que funcione en la web
