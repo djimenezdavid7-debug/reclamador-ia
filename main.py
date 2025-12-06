@@ -7,6 +7,35 @@ import os
 # --- PRELIMINARY CONFIG ---
 st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 
+# --- HACK PARA TRADUCIR UI (CSS) ---
+st.markdown("""
+<style>
+    /* Ocultar el texto 'Browse files' y poner 'Buscar Archivo' */
+    [data-testid='stFileUploader'] section > button:first-child {
+        display: none;
+    }
+    [data-testid='stFileUploader'] section::after {
+        content: "📂 Buscar Archivo (PDF/Foto)";
+        display: block;
+        padding: 10px;
+        background-color: #f0f2f6;
+        color: #31333F;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px dashed #ccc;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    section[data-testid="stFileUploader"] > div > div > button  {
+       display: none;
+    }
+    /* Forzar texto en español en zona de carga pequeña */
+    .st-emotion-cache-1fttcpj {
+        display: none;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- CONFIGURACIÓN ---
 API_KEY = os.getenv("OPENAI_API_KEY")
 LINK_STRIPE = "https://buy.stripe.com/00wdRacPj8mh3N8fAM83C00"
