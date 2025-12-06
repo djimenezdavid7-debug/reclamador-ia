@@ -9,7 +9,7 @@ st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 
 # --- CONFIGURACIÓN ---
 API_KEY = os.getenv("OPENAI_API_KEY")
-LINK_STRIPE = "https://buy.stripe.com/..."  # Update with your real link
+LINK_STRIPE = "https://buy.stripe.com/00wdRacPj8mh3N8fAM83C00"
 
 # --- LOGICA DE ARCHIVOS EN NUBE ---
 upload_dir = "uploads"
@@ -128,9 +128,24 @@ if uploaded_file is not None:
             # Vista previa borrosa (simulada con CSS o texto)
             st.info("Vista Previa:\n\nEstimados Sres...\n[CONTENIDO BLOQUEADO]...")
             
-            # Botón de Pago (Link)
-            st.markdown(f"""
-                <a href="{LINK_STRIPE}" target="_blank">
+            # Lógica de Pago
+            query_params = st.query_params
+            pago_exitoso = query_params.get("pagado") == "exito"
+
+            if pago_exitoso:
+                st.success("✅ ¡Pago confirmado! Aquí tienes tu documento desbloqueado:")
+                with open(pdf_path, "rb") as pdf_file:
+                    st.download_button(
+                        label="📄 DESCARGAR RECLAMACIÓN OFICIAL (PDF)",
+                        data=pdf_file,
+                        file_name="reclamacion_legal.pdf",
+                        mime="application/pdf"
+                    )
+            else:
+                # Botón de Pago (Link)
+                # Nota: El usuario debe configurar LINK_STRIPE para redirigir a ?pagado=exito
+                st.markdown(f"""
+                <a href="{LINK_STRIPE}" target="_self">
                     <button style="
                         background-color:#059669; 
                         color:white; 
@@ -143,6 +158,8 @@ if uploaded_file is not None:
                         🔓 DESBLOQUEAR Y DESCARGAR PDF (1.99€)
                     </button>
                 </a>
-                <p style="text-align:center; font-style:italic; font-size:12px; margin-top:5px;">Pago seguro vía Stripe</p>
-            """, unsafe_allow_html=True)
+                <p style="text-align:center; font-style:italic; font-size:12px; margin-top:5px;">
+                    Al pagar, serás redirigido automáticamente para descargar.
+                </p>
+                """, unsafe_allow_html=True)
 
