@@ -10,14 +10,16 @@ st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 # --- HACK PARA TRADUCIR UI (CSS) ---
 st.markdown("""
 <style>
-    /* Ocultar el texto 'Browse files' y poner 'Buscar Archivo' */
-    [data-testid='stFileUploader'] section > button:first-child {
-        display: none;
+    /* Ocultar el botón original 'Browse files' */
+    div[data-testid='stFileUploader'] button {
+        display: none !important;
     }
-    [data-testid='stFileUploader'] section::after {
+    /* Crear un pseudoelemento clicable que parezca el botón nuevo */
+    div[data-testid='stFileUploader']::after {
         content: "📂 Buscar Archivo (PDF/Foto)";
         display: block;
-        padding: 10px;
+        margin: 10px auto;
+        padding: 10px 20px;
         background-color: #f0f2f6;
         color: #31333F;
         border-radius: 8px;
@@ -25,12 +27,10 @@ st.markdown("""
         border: 1px dashed #ccc;
         cursor: pointer;
         font-weight: bold;
+        width: 60%;
     }
-    section[data-testid="stFileUploader"] > div > div > button  {
-       display: none;
-    }
-    /* Forzar texto en español en zona de carga pequeña */
-    .st-emotion-cache-1fttcpj {
+    /* Ocultar texto pequeño */
+    div[class*="st-emotion-cache"] small {
         display: none;
     }
 </style>
@@ -41,77 +41,42 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 LINK_STRIPE = "https://buy.stripe.com/00wdRacPj8mh3N8fAM83C00"
 
 # --- LOGICA DE ARCHIVOS EN NUBE ---
-upload_dir = "uploads"
-os.makedirs(upload_dir, exist_ok=True)
+( ... keep existing code until conectar_con_cerebro_real ...)
 
-# --- CEREBRO DIGITAL ---
-from pypdf import PdfReader
-
-# --- CEREBRO DIGITAL ---
-def conectar_con_cerebro_real(ruta_archivo):
-    if not API_KEY: 
-        return "Error: Falta la API KEY. Configúrala en Render/Environment."
-    
-    try:
-        client = OpenAI(api_key=API_KEY)
-        messages_payload = []
+        # ... (inside conectar_con_cerebro_real) ...
         
-        # Detectar tipo de archivo
-        ext = os.path.splitext(ruta_archivo)[1].lower()
-        
-        if ext == ".pdf":
-            # LOGICA PDF: Extraer texto
-            texto_pdf = ""
-            try:
-                reader = PdfReader(ruta_archivo)
-                for page in reader.pages:
-                    texto_pdf += page.extract_text() + "\n"
-            except Exception as e:
-                return f"Error leyendo PDF: {e}. Prueba subiendo una imagen (JPG/PNG)."
+            # Prompt MEJORADO para rellenar datos
+            prompt_system = """
+            Eres un abogado experto. Tu objetivo es redactar un documento LISTO PARA ENVIAR o IMPRIMIR.
             
-            if not texto_pdf.strip():
-                return "Error: El PDF parece ser una imagen escaneada sin texto seleccionable. Por favor sube una FOTO (JPG/PNG) del documento."
+            INSTRUCCIONES CRÍTICAS:
+            1. EXTRAE todos los datos visibles del documento: Nombre de la Empresa, CIF (si hay), Fecha, N. Factura/Ticket, Importe Total, Concepto.
+            2. RELLENA estos datos automáticamente en la carta. ¡No uses corchetes [] si el dato está en el documento!
+            3. Si faltan los datos del Cliente (Nombre, DNI, Dirección), y NO aparecen en el documento, entonces sí usa [Nombre], [Dirección]...
+            4. Tono legal, serio y amenazante. Cita Ley General para la Defensa de los Consumidores y Usuarios.
+            """
+
+            if ext == ".pdf":
+                prompt_content = f"""
+                CONTENIDO DEL PDF:
+                {texto_pdf}
                 
-            # Payload solo texto
-            prompt = f"""
-            Eres un abogado experto. Analiza el siguiente contenido extraído de un PDF de reclamación/factura.
-            
-            CONTENIDO DEL DOCUMENTO:
-            {texto_pdf}
-            
-            Redacta UNA SOLA CARTA de reclamación formal y contundente.
-            Usa un tono legal serio citando normativas.
-            """
-            messages_payload = [
-                {"role": "user", "content": prompt}
-            ]
-            
-        else:
-            # LOGICA IMAGEN: Vision API
-            with open(ruta_archivo, "rb") as image_file:
-                base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+                Redacta la reclamación usando estos datos reales.
+                """
+                messages_payload = [
+                    {"role": "system", "content": prompt_system},
+                    {"role": "user", "content": prompt_content}
+                ]
+            else:
+                prompt_content = "Analiza esta imagen y redacta la reclamación usando los datos reales que veas (Empresa, fecha, precio...)."
+                messages_payload = [
+                    {"role": "system", "content": prompt_system},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt_content},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                    ]}
+                ]
 
-            prompt = """
-            Eres un abogado experto. Analiza este documento visual.
-            Redacta UNA SOLA CARTA de reclamación formal y contundente.
-            Usa un tono legal serio citando normativas.
-            """
-            
-            messages_payload = [
-                {"role": "user", "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                ]}
-            ]
-        
-        with st.spinner("La IA está redactando tu defensa..."):
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages_payload,
-            )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error IA: {e}"
 
 def generar_pdf_local(texto):
     pdf = FPDF()
