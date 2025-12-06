@@ -41,41 +41,81 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 LINK_STRIPE = "https://buy.stripe.com/00wdRacPj8mh3N8fAM83C00"
 
 # --- LOGICA DE ARCHIVOS EN NUBE ---
-( ... keep existing code until conectar_con_cerebro_real ...)
+upload_dir = "uploads"
+os.makedirs(upload_dir, exist_ok=True)
 
-        # ... (inside conectar_con_cerebro_real) ...
+# --- CEREBRO DIGITAL ---
+from pypdf import PdfReader
+
+def conectar_con_cerebro_real(ruta_archivo):
+    if not API_KEY: 
+        return "Error: Falta la API KEY. Configúrala en Render/Environment."
+    
+    try:
+        client = OpenAI(api_key=API_KEY)
+        messages_payload = []
         
-            # Prompt MEJORADO para rellenar datos
-            prompt_system = """
-            Eres un abogado experto. Tu objetivo es redactar un documento LISTO PARA ENVIAR o IMPRIMIR.
+        # Detectar tipo de archivo
+        ext = os.path.splitext(ruta_archivo)[1].lower()
+        texto_pdf = ""
+        base64_image = ""
+        
+        if ext == ".pdf":
+            # LOGICA PDF: Extraer texto
+            try:
+                reader = PdfReader(ruta_archivo)
+                for page in reader.pages:
+                    texto_pdf += page.extract_text() + "\n"
+            except Exception as e:
+                return f"Error leyendo PDF: {e}. Prueba subiendo una imagen (JPG/PNG)."
             
-            INSTRUCCIONES CRÍTICAS:
-            1. EXTRAE todos los datos visibles del documento: Nombre de la Empresa, CIF (si hay), Fecha, N. Factura/Ticket, Importe Total, Concepto.
-            2. RELLENA estos datos automáticamente en la carta. ¡No uses corchetes [] si el dato está en el documento!
-            3. Si faltan los datos del Cliente (Nombre, DNI, Dirección), y NO aparecen en el documento, entonces sí usa [Nombre], [Dirección]...
-            4. Tono legal, serio y amenazante. Cita Ley General para la Defensa de los Consumidores y Usuarios.
-            """
+            if not texto_pdf.strip():
+                return "Error: El PDF parece ser una imagen escaneada sin texto seleccionable. Por favor sube una FOTO (JPG/PNG) del documento."
+        else:
+             # LOGICA IMAGEN
+            with open(ruta_archivo, "rb") as image_file:
+                base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
-            if ext == ".pdf":
-                prompt_content = f"""
-                CONTENIDO DEL PDF:
-                {texto_pdf}
-                
-                Redacta la reclamación usando estos datos reales.
-                """
-                messages_payload = [
-                    {"role": "system", "content": prompt_system},
-                    {"role": "user", "content": prompt_content}
-                ]
-            else:
-                prompt_content = "Analiza esta imagen y redacta la reclamación usando los datos reales que veas (Empresa, fecha, precio...)."
-                messages_payload = [
-                    {"role": "system", "content": prompt_system},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt_content},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ]}
-                ]
+        # Prompt MEJORADO para rellenar datos
+        prompt_system = """
+        Eres un abogado experto. Tu objetivo es redactar un documento LISTO PARA ENVIAR o IMPRIMIR.
+        
+        INSTRUCCIONES CRÍTICAS:
+        1. EXTRAE todos los datos visibles del documento: Nombre de la Empresa, CIF (si hay), Fecha, N. Factura/Ticket, Importe Total, Concepto.
+        2. RELLENA estos datos automáticamente en la carta. ¡No uses corchetes [] si el dato está en el documento!
+        3. Si faltan los datos del Cliente (Nombre, DNI, Dirección), y NO aparecen en el documento, entonces sí usa [Nombre], [Dirección]...
+        4. Tono legal, serio y amenazante. Cita Ley General para la Defensa de los Consumidores y Usuarios.
+        """
+
+        if ext == ".pdf":
+            prompt_content = f"""
+            CONTENIDO DEL PDF:
+            {texto_pdf}
+            
+            Redacta la reclamación usando estos datos reales.
+            """
+            messages_payload = [
+                {"role": "system", "content": prompt_system},
+                {"role": "user", "content": prompt_content}
+            ]
+        else:
+            prompt_content = "Analiza esta imagen y redacta la reclamación usando los datos reales que veas (Empresa, fecha, precio...)."
+            messages_payload = [
+                {"role": "system", "content": prompt_system},
+                {"role": "user", "content": [
+                    {"type": "text", "text": prompt_content},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                ]}
+            ]
+        
+        with st.spinner("La IA está redactando tu defensa..."):
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages_payload,
+            )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error IA: {e}"
 
 
 def generar_pdf_local(texto):
