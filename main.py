@@ -10,41 +10,31 @@ st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 # --- HACK PARA TRADUCIR UI (CSS) ---
 st.markdown("""
 <style>
-    /* TRUCO: Volver invisibles los textos originales pero mantener los elementos funcionales */
-    [data-testid='stFileUploader'] {
-        width: 100%;
-    }
+    /* TRUCO FINAL: Usar font-size: 0 para ocultar el texto original pero mantener el botón */
     
-    /* 1. Botón "Browse files": Hacemos transparente el texto pero dejamos el botón clicable */
     [data-testid='stFileUploader'] section > button {
-        color: transparent !important; /* Oculta "Browse files" */
-        position: relative;
+        font-size: 0 !important; /* Oculta "Browse files" */
+        visibility: visible !important;
+        background-color: #f0f2f6; /* Color de fondo por si acaso */
+        min-width: 200px; /* Asegurar ancho suficiente para el nuevo texto */
     }
     
-    /* 2. Ponemos nuestro texto en español encima (centrado) */
     [data-testid='stFileUploader'] section > button::after {
-        content: "📂 Buscar Factura/Ticket";
-        color: #31333F; /* Color texto normal */
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 16px;
-        font-weight: bold;
-        width: 100%;
+        content: "📂 Seleccionar Archivo"; /* Nuevo Texto */
+        font-size: 16px !important; /* Texto visible */
+        visibility: visible !important;
         display: block;
+        color: #31333F;
+        font-weight: bold;
+        margin-top: -2px; /* Pequeño ajuste vertical */
     }
 
-    /* 3. Ocultar el texto "Drag and drop file here" y "Limit 200MB" */
-    [data-testid='stFileUploader'] section span, 
-    [data-testid='stFileUploader'] section small {
+    /* Ocultar textos auxiliares */
+    [data-testid='stFileUploader'] section span {
         display: none !important;
     }
-    
-    /* Alternativa para versiones nuevas de Streamlit que usan clases raras */
-    div[class*="st-emotion-cache"] p, 
-    div[class*="st-emotion-cache"] small {
-        color: transparent !important;
+    [data-testid='stFileUploader'] section small {
+        display: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
