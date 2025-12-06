@@ -10,30 +10,36 @@ st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 # --- HACK PARA TRADUCIR UI (CSS) ---
 st.markdown("""
 <style>
-    /* TRUCO FINAL: Usar font-size: 0 para ocultar el texto original pero mantener el botón */
+    /* TRUCO: Overlay (Capa Encima) para tapar el texto en inglés */
     
     [data-testid='stFileUploader'] section > button {
-        font-size: 0 !important; /* Oculta "Browse files" */
-        visibility: visible !important;
-        background-color: #f0f2f6; /* Color de fondo por si acaso */
-        min-width: 200px; /* Asegurar ancho suficiente para el nuevo texto */
+        position: relative;
+        color: transparent !important; /* Hacer transparente el texto original */
     }
     
-    [data-testid='stFileUploader'] section > button::after {
-        content: "📂 Seleccionar Archivo"; /* Nuevo Texto */
-        font-size: 16px !important; /* Texto visible */
-        visibility: visible !important;
-        display: block;
-        color: #31333F;
+    [data-testid='stFileUploader'] section > button::before {
+        content: "📂 Seleccionar Archivo";
+        color: #31333F; /* Color texto */
+        background-color: #f0f2f6; /* Fondo que tapa el botón original */
+        font-size: 16px;
         font-weight: bold;
-        margin-top: -2px; /* Pequeño ajuste vertical */
+        
+        /* Posicionamiento absoluto para cubrir todo el botón */
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        
+        /* Centrado del texto */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
     }
-
-    /* Ocultar textos auxiliares */
-    [data-testid='stFileUploader'] section span {
-        display: none !important;
-    }
-    [data-testid='stFileUploader'] section small {
+    
+    /* Ocultar textos pequeños de límite */
+    [data-testid='stFileUploader'] small {
         display: none !important;
     }
 </style>
