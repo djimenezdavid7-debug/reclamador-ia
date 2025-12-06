@@ -10,28 +10,41 @@ st.set_page_config(page_title="Reclamador IA", page_icon="⚖️")
 # --- HACK PARA TRADUCIR UI (CSS) ---
 st.markdown("""
 <style>
-    /* Ocultar el botón original 'Browse files' */
-    div[data-testid='stFileUploader'] button {
+    /* TRUCO: Volver invisibles los textos originales pero mantener los elementos funcionales */
+    [data-testid='stFileUploader'] {
+        width: 100%;
+    }
+    
+    /* 1. Botón "Browse files": Hacemos transparente el texto pero dejamos el botón clicable */
+    [data-testid='stFileUploader'] section > button {
+        color: transparent !important; /* Oculta "Browse files" */
+        position: relative;
+    }
+    
+    /* 2. Ponemos nuestro texto en español encima (centrado) */
+    [data-testid='stFileUploader'] section > button::after {
+        content: "📂 Buscar Factura/Ticket";
+        color: #31333F; /* Color texto normal */
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 16px;
+        font-weight: bold;
+        width: 100%;
+        display: block;
+    }
+
+    /* 3. Ocultar el texto "Drag and drop file here" y "Limit 200MB" */
+    [data-testid='stFileUploader'] section span, 
+    [data-testid='stFileUploader'] section small {
         display: none !important;
     }
-    /* Crear un pseudoelemento clicable que parezca el botón nuevo */
-    div[data-testid='stFileUploader']::after {
-        content: "📂 Buscar Archivo (PDF/Foto)";
-        display: block;
-        margin: 10px auto;
-        padding: 10px 20px;
-        background-color: #f0f2f6;
-        color: #31333F;
-        border-radius: 8px;
-        text-align: center;
-        border: 1px dashed #ccc;
-        cursor: pointer;
-        font-weight: bold;
-        width: 60%;
-    }
-    /* Ocultar texto pequeño */
+    
+    /* Alternativa para versiones nuevas de Streamlit que usan clases raras */
+    div[class*="st-emotion-cache"] p, 
     div[class*="st-emotion-cache"] small {
-        display: none;
+        color: transparent !important;
     }
 </style>
 """, unsafe_allow_html=True)
