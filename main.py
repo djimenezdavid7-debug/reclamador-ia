@@ -16,32 +16,69 @@ upload_dir = "uploads"
 os.makedirs(upload_dir, exist_ok=True)
 
 # --- CEREBRO DIGITAL ---
-def conectar_con_cerebro_real(ruta_imagen):
+from pypdf import PdfReader
+
+# --- CEREBRO DIGITAL ---
+def conectar_con_cerebro_real(ruta_archivo):
     if not API_KEY: 
         return "Error: Falta la API KEY. Configúrala en Render/Environment."
     
     try:
         client = OpenAI(api_key=API_KEY)
+        messages_payload = []
         
-        # Leemos la imagen codificada
-        with open(ruta_imagen, "rb") as image_file:
-            base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+        # Detectar tipo de archivo
+        ext = os.path.splitext(ruta_archivo)[1].lower()
+        
+        if ext == ".pdf":
+            # LOGICA PDF: Extraer texto
+            texto_pdf = ""
+            try:
+                reader = PdfReader(ruta_archivo)
+                for page in reader.pages:
+                    texto_pdf += page.extract_text() + "\n"
+            except Exception as e:
+                return f"Error leyendo PDF: {e}. Prueba subiendo una imagen (JPG/PNG)."
+            
+            if not texto_pdf.strip():
+                return "Error: El PDF parece ser una imagen escaneada sin texto seleccionable. Por favor sube una FOTO (JPG/PNG) del documento."
+                
+            # Payload solo texto
+            prompt = f"""
+            Eres un abogado experto. Analiza el siguiente contenido extraído de un PDF de reclamación/factura.
+            
+            CONTENIDO DEL DOCUMENTO:
+            {texto_pdf}
+            
+            Redacta UNA SOLA CARTA de reclamación formal y contundente.
+            Usa un tono legal serio citando normativas.
+            """
+            messages_payload = [
+                {"role": "user", "content": prompt}
+            ]
+            
+        else:
+            # LOGICA IMAGEN: Vision API
+            with open(ruta_archivo, "rb") as image_file:
+                base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
-        prompt = """
-        Eres un abogado experto. Analiza este documento.
-        Redacta UNA SOLA CARTA de reclamación formal y contundente.
-        Usa un tono legal serio citando normativas.
-        """
+            prompt = """
+            Eres un abogado experto. Analiza este documento visual.
+            Redacta UNA SOLA CARTA de reclamación formal y contundente.
+            Usa un tono legal serio citando normativas.
+            """
+            
+            messages_payload = [
+                {"role": "user", "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                ]}
+            ]
         
         with st.spinner("La IA está redactando tu defensa..."):
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ]}
-                ],
+                messages=messages_payload,
             )
         return response.choices[0].message.content
     except Exception as e:
